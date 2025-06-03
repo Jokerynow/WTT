@@ -45,9 +45,6 @@
       color: var(--error);
       font-size: 14px;
     }
-    .text-center {
-      text-align: center;
-    }
     #timer-display {
       font-size: 24px;
       text-align: center;
@@ -57,16 +54,14 @@
 </head>
 <body>
   <div class="container" id="app">
-    <!-- Content loads here dynamically -->
+    <!-- Content loads here -->
   </div>
 
   <script>
     // Configuration
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyBzERD8WwCT2U1Yy6C6ZInicHyeLK5yjXNncP2FUAW3hVnPS0cRf6wJpmEIELpFZtD-g/exec'; // Replace with your deployed URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzE-C_URA0QE2CkvqKIqgtGiXpxW3qbk2pMUvUmc9-B9dORSjc81I0Et-wVS1nzRHcTnA/exec';
     let currentUser = null;
     let timerInterval;
-    let timerRunning = false;
-    let timerStartTime;
 
     // Initialize app
     document.addEventListener('DOMContentLoaded', () => {
@@ -80,15 +75,14 @@
     function renderLoginView() {
       document.getElementById('app').innerHTML = `
         <div class="card">
-          <h2 class="text-center">Login</h2>
+          <h2>Login</h2>
           <input type="text" id="username" placeholder="Username" autocapitalize="none">
           <input type="password" id="password" placeholder="Password">
-          <button id="login-btn">
-            <i class="fas fa-sign-in-alt"></i> Login
-          </button>
-          <p class="text-center">
+          <button id="login-btn">Login</button>
+          <p>
             <a href="#" id="register-link">Create account</a>
           </p>
+          <div id="login-error" class="error"></div>
         </div>
       `;
     }
@@ -96,59 +90,16 @@
     function renderRegisterView() {
       document.getElementById('app').innerHTML = `
         <div class="card">
-          <h2 class="text-center">Register</h2>
+          <h2>Register</h2>
           <input type="text" id="reg-username" placeholder="Username" autocapitalize="none">
           <input type="password" id="reg-password" placeholder="Password">
-          <div id="reg-error" class="error"></div>
-          <button id="register-btn">
-            <i class="fas fa-user-plus"></i> Create Account
-          </button>
-          <p class="text-center">
+          <button id="register-btn">Create Account</button>
+          <p>
             <a href="#" id="login-link">Back to login</a>
           </p>
+          <div id="reg-error" class="error"></div>
         </div>
       `;
-    }
-
-    function renderMainView() {
-      document.getElementById('app').innerHTML = `
-        <div class="card">
-          <h2 class="text-center">Welcome, ${currentUser.username}!</h2>
-          <button id="time-entry-btn">
-            <i class="fas fa-clock"></i> Time Entry
-          </button>
-          <button id="timer-btn">
-            <i class="fas fa-stopwatch"></i> Timer
-          </button>
-          <button id="reports-btn">
-            <i class="fas fa-file-pdf"></i> Generate Report
-          </button>
-          <button id="logout-btn" style="margin-top:20px;">
-            <i class="fas fa-sign-out-alt"></i> Logout
-          </button>
-        </div>
-      `;
-    }
-
-    function renderTimeEntryView() {
-      document.getElementById('app').innerHTML = `
-        <div class="card">
-          <h2 class="text-center">New Time Entry</h2>
-          <input type="date" id="entry-date">
-          <select id="project"></select>
-          <input type="time" id="start-time">
-          <input type="time" id="end-time">
-          <input type="text" id="break-time" placeholder="Break (e.g. 0:30)" value="0:30">
-          <textarea id="notes" placeholder="Notes"></textarea>
-          <button id="save-entry-btn">
-            <i class="fas fa-save"></i> Save Entry
-          </button>
-          <button id="back-btn">
-            <i class="fas fa-arrow-left"></i> Back
-          </button>
-        </div>
-      `;
-      loadProjects();
     }
 
     // ======================
@@ -166,7 +117,7 @@
         return await response.json();
       } catch (error) {
         console.error('API Error:', error);
-        return { success: false, error: error.message };
+        return { error: error.message };
       }
     }
 
@@ -174,128 +125,41 @@
     // EVENT HANDLERS
     // ======================
     function setupEventListeners() {
-      // Use event delegation for dynamic elements
       document.addEventListener('click', async (e) => {
+        // Login handler
         if (e.target.id === 'login-btn') {
-          const username = document.getElementById('username').value;
-          const password = document.getElementById('password').value;
+          const response = await callAPI('login', {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          });
           
-          const response = await callAPI('login', { username, password });
-          if (response.success) {
+          if (response.error) {
+            document.getElementById('login-error').textContent = response.error;
+          } else {
             currentUser = response.user;
             renderMainView();
-          } else {
-            alert(response.error || "Login failed");
           }
         }
         
-        if (e.target.id === 'register-link') {
-          renderRegisterView();
-        }
-        
+        // Register handler
         if (e.target.id === 'register-btn') {
-          const username = document.getElementById('reg-username').value;
-          const password = document.getElementById('reg-password').value;
+          const response = await callAPI('register', {
+            username: document.getElementById('reg-username').value,
+            password: document.getElementById('reg-password').value
+          });
           
-          const response = await callAPI('register', { username, password });
-          if (response.success) {
-            alert("Account created! Please login.");
-            renderLoginView();
+          if (response.error) {
+            document.getElementById('reg-error').textContent = response.error;
           } else {
-            document.getElementById('reg-error').textContent = 
-              response.error || "Registration failed";
+            alert('Account created! Please login.');
+            renderLoginView();
           }
         }
         
-        if (e.target.id === 'login-link') {
-          renderLoginView();
-        }
-        
-        if (e.target.id === 'time-entry-btn') {
-          renderTimeEntryView();
-        }
-        
-        if (e.target.id === 'timer-btn') {
-          startTimerUI();
-        }
-        
-        if (e.target.id === 'logout-btn') {
-          currentUser = null;
-          renderLoginView();
-        }
+        // Navigation
+        if (e.target.id === 'register-link') renderRegisterView();
+        if (e.target.id === 'login-link') renderLoginView();
       });
-    }
-
-    // ======================
-    // TIMER FUNCTIONS
-    // ======================
-    function startTimerUI() {
-      document.getElementById('app').innerHTML = `
-        <div class="card">
-          <h2 class="text-center">Work Timer</h2>
-          <div id="timer-display">00:00:00</div>
-          <input type="text" id="timer-notes" placeholder="What are you working on?">
-          <button id="timer-toggle-btn">
-            <i class="fas fa-play"></i> Start
-          </button>
-          <button id="timer-back-btn">
-            <i class="fas fa-arrow-left"></i> Back
-          </button>
-        </div>
-      `;
-      
-      document.getElementById('timer-toggle-btn').addEventListener('click', toggleTimer);
-      document.getElementById('timer-back-btn').addEventListener('click', renderMainView);
-    }
-
-    function toggleTimer() {
-      if (timerRunning) {
-        stopTimer();
-      } else {
-        startTimer();
-      }
-    }
-
-    function startTimer() {
-      timerStartTime = new Date();
-      timerRunning = true;
-      document.getElementById('timer-toggle-btn').innerHTML = '<i class="fas fa-stop"></i> Stop';
-      updateTimerDisplay();
-    }
-
-    function stopTimer() {
-      timerRunning = false;
-      document.getElementById('timer-toggle-btn').innerHTML = '<i class="fas fa-play"></i> Start';
-      clearInterval(timerInterval);
-      
-      const endTime = new Date();
-      const hours = ((endTime - timerStartTime) / 3600000).toFixed(2);
-      alert(`Timer stopped: ${hours} hours recorded`);
-    }
-
-    function updateTimerDisplay() {
-      if (!timerRunning) return;
-      
-      const elapsed = new Date() - timerStartTime;
-      const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
-      const mins = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
-      const secs = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
-      
-      document.getElementById('timer-display').textContent = `${hours}:${mins}:${secs}`;
-      timerInterval = setTimeout(updateTimerDisplay, 1000);
-    }
-
-    // ======================
-    // HELPER FUNCTIONS
-    // ======================
-    async function loadProjects() {
-      const response = await callAPI('get_projects', { user_id: currentUser.id });
-      if (response.success) {
-        const select = document.getElementById('project');
-        select.innerHTML = response.data.map(project => 
-          `<option value="${project.id}">${project.name} ($${project.rate}/hr)</option>`
-        ).join('');
-      }
     }
   </script>
 </body>
