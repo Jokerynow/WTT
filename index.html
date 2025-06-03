@@ -76,7 +76,7 @@
   </div>
   <script>
     // Configuration
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyQ8w1MdIKgw-aV4QZUUrWnqqZn8CiyadFA-h5M0iCHmblQq3Jpuxn0YBZPyRGm8lEvdA/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwCuhHk8SOwy-FLE4qFQvXPLFCYcxqkYrwaeGBaplCzf54AkpHrKFubLJ7vGaU1PvSYRQ/exec';
     let currentUser = null;
     
     // Main App
@@ -131,17 +131,25 @@
     
     // API Functions
     async function callAPI(action, data = {}) {
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          body: JSON.stringify({ action, ...data })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        return { success: false, error: 'Network error' };
+        try {
+          const response = await fetch(API_URL, {
+            method: 'POST',
+            mode: 'cors', // Explicitly enable CORS
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, ...data })
+          });
+          
+          if (!response.ok) throw new Error('Network error');
+          return await response.json();
+        } catch (error) {
+          console.error('API Error:', error);
+          return { success: false, error: error.message };
+        }
       }
-    }
+    
+    // Event Handlers
     
     async function login() {
       const response = await callAPI('login', {
