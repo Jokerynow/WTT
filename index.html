@@ -76,7 +76,7 @@
   </div>
   <script>
     // Configuration
-    const API_URL = 'https://script.google.com/macros/s/AKfycby-UzIsXecIm2CJI1cCSDcf-bEbuhdR4UPy4-0hBkKj57Z3KiPZSqT5VT3uKtaSyjwaZw/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyJY2QJZCa30yRO69P4a0HGr2ABCJM_cFAkshx0W_MKsdsdj_4wg8jIvQX4JF2q-tlPbw/exec';
     let currentUser = null;
     
     // Main App
@@ -157,6 +157,31 @@
       }
     }
     
+    async function register() {
+        const username = document.getElementById('reg-username').value;
+        const password = document.getElementById('reg-password').value;
+        const email = document.getElementById('reg-email').value;
+      
+        if (!username || !password) {
+          alert("Username and password are required!");
+          return;
+        }
+      
+        try {
+          const response = await callAPI('register', { username, password, email });
+          
+          if (response.success) {
+            alert("Account created! Please login.");
+            renderLoginView();
+          } else {
+            alert("Error: " + (response.error || "Registration failed"));
+          }
+        } catch (error) {
+          console.error("Registration error:", error);
+          alert("Network error - check console");
+        }
+      }
+
     async function loadTimeEntryForm() {
       const projects = await callAPI('get_projects', { user_id: currentUser.id });
       
