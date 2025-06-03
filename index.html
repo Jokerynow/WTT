@@ -61,7 +61,19 @@
   <div class="container" id="app">
     <!-- Dynamic content loads here -->
   </div>
-
+  <div id="timer-view" style="display:none;">
+    <div class="card">
+      <h3>Work Timer</h3>
+      <div id="timer-display">00:00:00</div>
+      <input type="text" id="timer-notes" placeholder="What are you working on?">
+      <button id="timer-toggle" onclick="toggleTimer()">
+        <i class="fas fa-play"></i> Start
+      </button>
+      <button onclick="generatePDF()">
+        <i class="fas fa-file-pdf"></i> Generate PDF
+      </button>
+    </div>
+  </div>
   <script>
     // Configuration
     const API_URL = 'YOUR_APPS_SCRIPT_URL';
@@ -190,6 +202,84 @@
         alert('Error: ' + (response.error || 'Failed to save entry'));
       }
     }
+
+    // Timer functionality
+  let timerInterval;
+  let timerRunning = false;
+  let timerStartTime;
+  
+  function showTimer() {
+    document.getElementById('timer-view').style.display = 'block';
+  }
+  
+  function toggleTimer() {
+    if (timerRunning) {
+      stopTimer();
+    } else {
+      startTimer();
+    }
+  }
+  
+  async function startTimer() {
+    const notes = document.getElementById('timer-notes').value;
+    const response = await callAPI('startTimer', { 
+      user_id: currentUser.id, 
+      notes 
+    });
+    
+    if (response.success) {
+      timerStartTime = new Date();
+      timerRunning = true;
+      document.getElementById('timer-toggle').innerHTML = '<i class="fas fa-stop"></i> Stop';
+      updateTimerDisplay();
+    }
+  }
+  
+  async function stopTimer() {
+    const notes = document.getElementById('timer-notes').value;
+    const response = await callAPI('stopTimer', { 
+      user_id: currentUser.id,
+      project_id: document.getElementById('project').value,
+      notes 
+    });
+    
+    if (response.success) {
+      timerRunning = false;
+      document.getElementById('timer-toggle').innerHTML = '<i class="fas fa-play"></i> Start';
+      clearInterval(timerInterval);
+      alert(`Saved ${response.entry.hours} hours!`);
+    }
+  }
+  
+  function updateTimerDisplay() {
+    if (!timerRunning) return;
+    
+    const elapsed = new Date() - timerStartTime;
+    const hours = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+    const mins = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+    const secs = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+    
+    document.getElementById('timer-display').textContent = `${hours}:${mins}:${secs}`;
+    timerInterval = setTimeout(updateTimerDisplay, 1000);
+  }
+  
+  // PDF Report Generation
+  async function generatePDF() {
+    const startDate = prompt("Start date (YYYY-MM-DD, or leave blank):");
+    const endDate = prompt("End date (YYYY-MM-DD, or leave blank):");
+    
+    const response = await callAPI('generatePDFReport', {
+      user_id: currentUser.id,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined
+    });
+    
+    if (response.success) {
+      window.open(response.pdf_url, '_blank');
+    } else {
+      alert(response.error || "Failed to generate PDF");
+    }
+  }
   </script>
 </body>
 </html>
